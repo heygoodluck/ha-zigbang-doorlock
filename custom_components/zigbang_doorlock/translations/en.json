@@ -12,9 +12,17 @@
             "lock_failed": "Failed to lock"
           },
           "unlock_tool": {
+            "bluetooth": "Bluetooth",
+            "face": "Face",
             "fingerprint": "Fingerprint",
+            "mst": "MST",
+            "nfc": "NFC",
+            "number": "Number",
+            "keytag": "Keytag",
+            "rmc": "Remote Controller",
             "application": "Application",
-            "keytag": "Keytag"
+            "voice": "Voice",
+            "in_door_button": "In Door Button"
           }
         }
       }
@@ -36,9 +44,17 @@
             "lock_failed": "Failed to lock"
           },
           "unlock_tool": {
+            "bluetooth": "Bluetooth",
+            "face": "Face",
             "fingerprint": "Fingerprint",
+            "mst": "MST",
+            "nfc": "NFC",
+            "number": "Number",
+            "keytag": "Keytag",
+            "remote_controller": "Remote Controller",
             "application": "Application",
-            "keytag": "Keytag"
+            "voice": "Voice",
+            "in_door_button": "In Door Button"
           }
         }
       }

@@ -12,9 +12,17 @@
             "lock_failed": "잠금 실패"
           },
           "unlock_tool": {
+            "bluetooth": "블루투스",
+            "face": "얼굴인식",
             "fingerprint": "지문",
-            "application": "앱",
-            "keytag": "키태그"
+            "mst": "MST",
+            "nfc": "NFC",
+            "number": "번호입력",
+            "keytag": "키택",
+            "remote_controller": "리모컨",
+            "application": "어플리케이션",
+            "voice": "음성인식",
+            "in_door_button": "문 안 버튼"
           }
         }
       }
@@ -36,9 +44,17 @@
             "lock_failed": "잠금 실패"
           },
           "unlock_tool": {
+            "bluetooth": "블루투스",
+            "face": "얼굴인식",
             "fingerprint": "지문",
-            "application": "앱",
-            "keytag": "키태그"
+            "mst": "MST",
+            "nfc": "NFC",
+            "number": "번호입력",
+            "keytag": "키택",
+            "remote_controller": "리모컨",
+            "application": "어플리케이션",
+            "voice": "음성인식",
+            "in_door_button": "문 안 버튼"
           }
         }
       }
