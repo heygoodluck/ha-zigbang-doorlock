@@ -10,6 +10,7 @@
 *   **원격 보안 제어**: HA 대시보드 및 서비스 호출을 통해 안전하게 문을 열 수(Unlock) 있습니다.
 *   **지능형 배터리 관리**: 배터리 잔량을 별도의 센서(`sensor`) 엔티티로 제공하여 교체 시기를 푸시 알림으로 설정할 수 있습니다.
 *   **정밀한 출입 이력 분석**: 지문, 카드, 앱, 내부 수동 개폐 등 출입 수단과 사용자 정보를 엔티티의 속성(Attributes) 데이터로 상세히 제공합니다.
+*   **즉각적인 알림(Event) 트리거**: 전용 `event` 플랫폼 지원으로 도어락 출입 알림을 자동화에 손쉽게 연동할 수 있습니다.
 *   **자동 세션 복구**: API 인증 만료 시 자동으로 재로그인을 수행하여 끊김 없는 연결성을 유지합니다.
 *   **타임존 자동 보정**: 서버의 UTC 시간을 한국 표준시(KST) 및 사용자의 지역 시간대에 맞춰 자동으로 변환합니다.
 
@@ -18,18 +19,57 @@
 ### **📂 디렉토리 구조**
 
 ```text
-custom_components/zigbang-doorlock/
-├── __init__.py      # 데이터 업데이트 코디네이터 및 통합 구성요소 초기화
-├── api.py           # 직방 클라우드 서버와의 REST API 통신 로직
-├── const.py         # 도메인, 기본 설정값 등 상수 정의
-├── lock.py          # 도어락 잠금/해제 기능 엔티티 구현
-├── sensor.py        # 배터리 잔량 및 상태 센서 엔티티 구현
-└── manifest.json    # 통합 구성요소 메타데이터 및 의존성 정의
+ha-zigbang-doorlock/
+├── custom_components/
+│   └── zigbang_doorlock/
+│       ├── __init__.py      # 데이터 업데이트 코디네이터 및 통합 구성요소 초기화
+│       ├── api.py           # 직방 클라우드 서버와의 REST API 통신 로직
+│       ├── const.py         # 도메인, 기본 설정값 등 상수 정의
+│       ├── event.py         # 출입 이력 및 실시간 알림 이벤트 엔티티 구현
+│       ├── lock.py          # 도어락 잠금/해제 기능 엔티티 구현
+│       ├── sensor.py        # 배터리 잔량 및 상태 센서 엔티티 구현
+│       ├── util.py          # 타임존 변환 및 랜덤 IMEI 생성 등 유틸리티
+│       ├── manifest.json    # 통합 구성요소 메타데이터 및 의존성 정의
+│       ├── brand/           # Home Assistant UI에 표시될 로고 및 아이콘
+│       └── translations/    # 다국어 지원 (UI 번역) 파일
+└── tests/                   # 개발용 단위/통합 테스트 코드
 ```
 
 ---
 
-### **🚀 설치 및 설정**
+### **� 엔티티 속성 (Attributes) 및 가능한 값**
+
+`lock` 및 `event` 엔티티는 자동화 스크립트에서 다양하게 활용할 수 있도록 출입 상태 정보를 세분화하여 속성(Attribute)으로 제공합니다.
+
+#### **1. Lock 엔티티 (`lock.*_lock`)**
+가장 최근의 출입 이력 정보를 저장합니다.
+
+| 속성명 | 설명 | 가능한 값 (Possible Values) |
+| :--- | :--- | :--- |
+| `last_event_at` | 마지막 이벤트 발생 시간 | ISO 8601 시간 (예: `2024-05-18T14:30:00+09:00`) |
+| `last_message` | 직방 API 알림 메시지 원문 | 문자열 (예: `홍길동님이 지문으로 문을 열었습니다.`) |
+| `last_alert_type` | 도어락 상태 및 이벤트 유형 | `locked`, `unlocked`, `unlock_failed_5_times`, `unlocked_for_30_seconds`, `lock_failed` |
+| `last_unlock_tool` | 잠금 해제 인증 수단 | `fingerprint`(지문), `application`(앱), `keytag`(카드), `in_door`(내부 수동), `null`(없음) |
+| `last_user_name` | 인증된 사용자의 이름 | 사용자 이름 (예: `홍길동`) 또는 `null` |
+| `event_id` | 직방 시스템의 이벤트 고유 식별자 | 숫자/문자열 ID (예: `12345678`) |
+
+#### **2. Event 엔티티 (`event.*_event`)**
+새로운 이벤트 발생 시 이벤트 버스를 통해 전달되는 데이터 및 엔티티 속성입니다.
+
+| 속성명 | 설명 | 가능한 값 (Possible Values) |
+| :--- | :--- | :--- |
+| `event_type` | HA 이벤트 플랫폼 종류 | `doorlock_alert` (고정값) |
+| `message` | 직방 API 알림 메시지 원문 | 문자열 |
+| `alert_type` | 도어락 상태 및 이벤트 유형 | `locked`, `unlocked`, `unlock_failed_5_times`, `unlocked_for_30_seconds`, `lock_failed` |
+| `unlock_tool` | 잠금 해제 인증 수단 | `fingerprint`, `application`, `keytag`, `in_door`, `null` |
+| `user_name` | 인증된 사용자의 이름 | 사용자 이름 또는 `null` |
+| `alert_at` | 이벤트 발생 시간 | ISO 8601 시간 (예: `2024-05-18T14:30:00+09:00`) |
+
+💡 **Tip**: 자동화 작성 시 `alert_type`이 `unlock_failed_5_times`이거나 `lock_failed`인 경우 보안 경고 알림(Siren 등)을 울리도록 구성할 수 있습니다.
+
+---
+
+### **�� 설치 및 설정**
 
 #### **1. 수동 설치**
 1. Home Assistant의 설정 디렉토리(`config/`) 내부의 `custom_components/` 폴더로 이동합니다. (폴더가 없으면 생성하세요.)
@@ -68,34 +108,55 @@ zigbang_doorlock:
 
 ### **🤖 자동화 활용 예시**
 
-새로운 출입 이벤트가 발생할 때 사용자 이름을 포함하여 스마트폰으로 푸시 알림을 보내는 자동화 스크립트입니다.
+> ⚠️ **주의 (알림 누락 방지)**: `lock` 엔티티의 속성 변화(`platform: state`)를 트리거로 사용할 경우, 10초 간격의 상태 조회(Polling) 특성상 짧은 시간 안에 여러 번의 출입이 발생하면 최신 데이터로 덮어씌워져 **일부 알림 누락**이 발생할 수 있습니다. 누락 없는 안정적인 알림을 위해서는 아래의 **Event 방식(권장)**을 사용하시기 바랍니다.
+
+#### **1. Event 방식을 활용한 알림 (권장)**
+Home Assistant의 이벤트 버스를 직접 수신하여, 10초 주기 내에 연속으로 발생한 이벤트도 모두 누락 없이 처리합니다.
+
+```yaml
+alias: "[보안] 현관문 실시간 출입 알림 (Event 방식)"
+description: "이벤트 버스를 활용하여 누락 없이 알림을 발송합니다."
+trigger:
+  - platform: event
+    event_type: zigbang_doorlock_alert
+action:
+  - variables:
+      user_name: "{{ trigger.event.data.user_name }}"
+      msg_text: "{{ trigger.event.data.message }}"
+      friendly_msg: >-
+        {% if user_name %}
+          {{ user_name }}님이 인증을 통해 입실하였습니다.
+        {% else %}
+          {{ msg_text }}
+        {% endif %}
+    service: notify.mobile_app_your_smartphone
+    data:
+      title: "🏠 도어락 알림"
+      message: "{{ friendly_msg }}"
+      data:
+        group: "doorlock-events"
+        clickAction: "/lovelace/security"
+```
+
+#### **2. Lock 엔티티 속성을 활용한 알림 (참고용)**
+기존처럼 `lock` 엔티티의 `event_id` 속성 변화를 감지하여 스마트폰으로 푸시 알림을 보내는 자동화 스크립트입니다.
 
 ```yaml
 alias: "[보안] 현관문 실시간 출입 알림"
-description: "출입 수단과 이름을 구분하여 알림을 발송합니다."
+description: "엔티티 속성을 활용하여 알림을 발송합니다."
 trigger:
   - platform: state
     entity_id: lock.zigbang_doorlock
     attribute: event_id  # 새로운 출입 이벤트 발생 시 트리거
 action:
   - variables:
-      msg_text: "{{ state_attr(trigger.entity_id, 'last_event_msg') }}"
-      msg_code: "{{ state_attr(trigger.entity_id, 'last_event_code') }}"
-      # 메시지에서 사용자 이름 추출 (예: '홍길동'님이 문을 열었습니다 -> 홍길동)
-      user_name: >-
-        {% if msg_text.count("'") >= 2 %}
-          {{ msg_text.split("'")[1] }}
-        {% elif '(' in msg_text %}
-          {{ msg_text.split('(')[1].split(')')[0] }}
-        {% else %}
-          가족
-        {% endif %}
-      # 출입 유형에 따른 메시지 포맷팅
+      user_name: "{{ state_attr(trigger.entity_id, 'last_user_name') }}"
+      msg_text: "{{ state_attr(trigger.entity_id, 'last_message') }}"
       friendly_msg: >-
-        {% if "622_OUT" in msg_code %}
-          내부에서 수동으로 문을 열고 나갔습니다.
-        {% else %}
+        {% if user_name %}
           {{ user_name }}님이 인증을 통해 입실하였습니다.
+        {% else %}
+          {{ msg_text }}
         {% endif %}
     service: notify.mobile_app_your_smartphone
     data:

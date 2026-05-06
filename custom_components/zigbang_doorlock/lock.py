@@ -1,10 +1,9 @@
 import logging
-from datetime import datetime
 from homeassistant.components.lock import LockEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.util import dt as dt_util
-from .const import DOMAIN
+from .const import DOMAIN, ALERT_TYPE, UNLOCK_TOOL
+from .util import rawdt_to_utc
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,11 +30,12 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
         # 고정값 설정
         self._attr_unique_id = f"{device_id}_lock"
         self._attr_has_entity_name = True
+        self._attr_translation_key = "zigbang_doorlock"
         self._attr_name = None # 기기 이름은 device_info의 name을 따름
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, device_id)},
-            "name": self._device_data.get("deviceNm", "직방 도어락"),
+            "name": self._device_data.get("deviceNm", "Zigbang Doorlock"),
             "model": self._device_data.get("productId", "SHP-Series"),
             "manufacturer": "Zigbang",
         }
@@ -59,30 +59,14 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
             return None
 
         raw_dt = history.get("rgstDt")
-        formatted_dt = raw_dt
-
-        # 문자열 시간을 HA 타임존 객체로 변환
-        if raw_dt:
-            try:
-                # 1. 문자열을 naive datetime으로 파싱
-                naive_dt = datetime.strptime(raw_dt, "%Y-%m-%d %H:%M:%S")
-                _LOGGER.debug("naive_dt: %s", naive_dt)
-                utc_dt = naive_dt.replace(tzinfo=dt_util.UTC)
-                _LOGGER.debug("utc_dt: %s", utc_dt)
-                # 2. HA 시스템 타임존 주입 (as_local은 타임존이 없을 경우 시스템 타임존으로 간주)
-                local_dt = dt_util.as_local(utc_dt)
-                _LOGGER.debug("local_dt: %s", local_dt)
-                # 3. ISO 포맷 문자열로 변환 (HA UI에서 시간으로 인식하기 좋음)
-                formatted_dt = local_dt.isoformat()
-                _LOGGER.debug("formatted_dt: %s", formatted_dt)
-            except Exception as e:
-                _LOGGER.error("일시 timezone 적용 시 오류, %s", e)
-                formatted_dt = raw_dt
+        formatted_dt = rawdt_to_utc(raw_dt)
 
         return {
-            "last_event_time": formatted_dt,
-            "last_event_msg": history.get("msgText"),
-            "last_event_code": history.get("msgCd"),
+            "last_event_at": formatted_dt,
+            "last_message": history.get("msgText"),
+            "last_alert_type": ALERT_TYPE.get(history.get("msgCd"), history.get("msgCd")),
+            "last_unlock_tool": UNLOCK_TOOL.get(history.get("msgCd")),
+            "last_user_name": history.get("pinNm"),
             "event_id": history.get("eventId")
         }
 

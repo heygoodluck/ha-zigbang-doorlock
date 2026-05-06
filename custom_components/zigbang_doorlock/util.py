@@ -1,4 +1,9 @@
+import logging
 import random
+from homeassistant.util import dt as dt_util
+from datetime import datetime
+
+_LOGGER = logging.getLogger(__name__)
 
 def generate_random_imei() -> str:
     """
@@ -27,3 +32,22 @@ def generate_random_imei() -> str:
     imei_digits.append(check_digit)
 
     return "".join(map(str, imei_digits))
+
+def rawdt_to_utc(raw_dt: str) -> str:
+    formatted_dt = raw_dt
+    if raw_dt:
+        try:
+            # 1. 문자열을 naive datetime으로 파싱
+            naive_dt = datetime.strptime(raw_dt, "%Y-%m-%d %H:%M:%S")
+            _LOGGER.debug("naive_dt: %s", naive_dt)
+            utc_dt = naive_dt.replace(tzinfo=dt_util.UTC)
+            _LOGGER.debug("utc_dt: %s", utc_dt)
+            # 2. HA 시스템 타임존 주입 (as_local은 타임존이 없을 경우 시스템 타임존으로 간주)
+            local_dt = dt_util.as_local(utc_dt)
+            _LOGGER.debug("local_dt: %s", local_dt)
+            # 3. ISO 포맷 문자열로 변환 (HA UI에서 시간으로 인식하기 좋음)
+            formatted_dt = local_dt.isoformat()
+            _LOGGER.debug("formatted_dt: %s", formatted_dt)
+        except Exception as e:
+            _LOGGER.error("시간 변환 오류: %s", e)
+    return formatted_dt
