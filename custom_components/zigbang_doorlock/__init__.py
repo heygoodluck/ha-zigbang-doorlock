@@ -7,7 +7,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.storage import Store
 from .api import ZigbangAPI
-from .const import DOMAIN
+from .const import DOMAIN, ALERT_TYPE, UNLOCK_TOOL
+from .util import rawdt_to_utc
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,27 +51,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
                 last_known_event_id = stored_data.get(device_id)
                 new_events = []
-                current_latest_id = None
-
-                # 리스트의 첫 번째에서 최대 세 번째까지 확인
+                
+                # 1. 상위 3건 중 이미 처리된 이벤트를 만나기 전까지의 새 이벤트만 우선 추출
+                pending_events = []
                 for history in history_list[:3]:
                     event_id = history.get("eventId")
-                    if current_latest_id is None:
-                        current_latest_id = event_id
-
                     if event_id == last_known_event_id or event_id in processed_events:
-                        break  # 이전에 처리했던 이벤트를 만나면 중단
+                        break  # 처리된 이벤트를 만나면 그 위(더 최신)까지만 추출하고 중단
+                    pending_events.append(history)
 
+                # 가장 최신 이벤트 ID는 history_list의 첫 번째 요소
+                current_latest_id = history_list[0].get("eventId") if history_list else None
+
+                # 2. 추출된 새 이벤트를 뒤에서부터(오래된 것부터) 순회하며 처리
+                for history in reversed(pending_events):
+                    event_id = history.get("eventId")
                     processed_events.add(event_id)
                     # 최초 등록 시점(last_known_event_id가 없을 때)에는 알림을 보내지 않음
                     if last_known_event_id is not None:
                         new_events.append(history)
                 
-                # 새로운 이벤트를 HA 이벤트 버스에 발송 (오래된 것부터 발생시키기 위해 역순 처리)
-                for evt in reversed(new_events):
+                # 새로운 이벤트를 HA 이벤트 버스에 발송 (이미 역순 순회로 수집되어 오래된 것부터 발송됨)
+                for evt in new_events:
                     # 사용자가 요청한 msgText, msgCd, rgstDt와 기기를 식별할 수 있는 deviceId 포함
-                    event_data = {"msgText": evt.get("msgText"), "msgCd": evt.get("msgCd"), "rgstDt": evt.get("rgstDt"), "device_id": device_id, "pinTypeCd": evt.get("pinTypeCd"), "pinNm": evt.get("pinNm")}
-                    hass.bus.async_fire(f"{DOMAIN}_event", event_data)
+                    event_data = {
+                        "message": evt.get("msgText"),
+                        "alert_type": ALERT_TYPE.get(evt.get("msgCd"), evt.get("msgCd")),
+                        "unlock_tool": UNLOCK_TOOL.get(evt.get("msgCd")),
+                        "user_name": evt.get("eventMemberNm") if evt.get("msgCd") == "622_IN_SVR" else evt.get("pinNm"),
+                        "alert_at": rawdt_to_utc(evt.get("rgstDt")),
+                        "device_id": device_id
+                    }
+                    hass.bus.async_fire("zigbang_doorlock_alert", event_data)
 
                 # event.py 엔티티에서 처리할 수 있도록 코디네이터 데이터에 새 이벤트 추가
                 device_dict[device_id]["new_events"] = new_events

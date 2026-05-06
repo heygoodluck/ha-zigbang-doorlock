@@ -2,12 +2,45 @@
   "entity": {
     "event": {
       "doorlock_alert": {
-        "name": "도어락 알림"
+        "name": "알림",
+        "state_attributes": {
+          "alert_type": {
+            "locked": "잠김",
+            "unlocked": "열림",
+            "unlock_failed_5_times": "5회 열기 실패",
+            "unlocked_for_30_seconds": "30초 이상 열려있음",
+            "lock_failed": "잠금 실패"
+          },
+          "unlock_tool": {
+            "fingerprint": "지문",
+            "application": "앱",
+            "keytag": "키태그"
+          }
+        }
       }
     },
     "sensor": {
       "battery": {
         "name": "배터리"
+      }
+    },
+    "lock": {
+      "zigbang_doorlock": {
+        "name": "도어락",
+        "state_attributes": {
+          "alert_type": {
+            "locked": "잠김",
+            "unlocked": "열림",
+            "unlock_failed_5_times": "5회 열기 실패",
+            "unlocked_for_30_seconds": "30초 이상 열려있음",
+            "lock_failed": "잠금 실패"
+          },
+          "unlock_tool": {
+            "fingerprint": "지문",
+            "application": "앱",
+            "keytag": "키태그"
+          }
+        }
       }
     }
   }

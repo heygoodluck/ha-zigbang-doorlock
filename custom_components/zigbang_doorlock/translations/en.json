@@ -1,13 +1,46 @@
 {
   "entity": {
     "event": {
-      "access_event": {
-        "name": "Doorlock Alarm"
+      "doorlock_alert": {
+        "name": "Doorlock Alert",
+        "state_attributes": {
+          "alert_type": {
+            "locked": "Locked",
+            "unlocked": "Unlocked",
+            "unlock_failed_5_times": "Failed to unlock 5 times",
+            "unlocked_for_30_seconds": "Unlocked for 30 seconds",
+            "lock_failed": "Failed to lock"
+          },
+          "unlock_tool": {
+            "fingerprint": "Fingerprint",
+            "application": "Application",
+            "keytag": "Keytag"
+          }
+        }
       }
     },
     "sensor": {
       "battery": {
         "name": "Battery"
+      }
+    },
+    "lock": {
+      "zigbang_doorlock": {
+        "name": "doorlock",
+        "state_attributes": {
+          "alert_type": {
+            "locked": "Locked",
+            "unlocked": "Unlocked",
+            "unlock_failed_5_times": "Failed to unlock 5 times",
+            "unlocked_for_30_seconds": "Unlocked for 30 seconds",
+            "lock_failed": "Failed to lock"
+          },
+          "unlock_tool": {
+            "fingerprint": "Fingerprint",
+            "application": "Application",
+            "keytag": "Keytag"
+          }
+        }
       }
     }
   }

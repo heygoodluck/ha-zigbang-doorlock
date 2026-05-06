@@ -4,37 +4,23 @@ ATTR_LOCK_STATE = "lock_state"
 
 # 언어별 알림 타입 정의 (기본 지원: 한국어, 영어)
 ALERT_TYPE = {
-    "ko": {
-        '622_NONE': '잠김',
-        '622_IN_FGP': '열림',
-        '622_IN_RFC': '열림',
-        '622_OUT': '열림',
-        '622_IN_SVR': '열림',
-        '620': '5회 열기 실패',
-        '648': '30초 열림',
-        '652': '잠금 실패'
-    },
-    "en": {
-        '622_NONE': 'Locked',
-        '622_IN_FGP': 'Unlocked',
-        '622_IN_RFC': 'Unlocked',
-        '622_OUT': 'Unlocked',
-        '622_IN_SVR': 'Unlocked',
-        '620': 'Failed 5 times',
-        '648': 'Open for 30s',
-        '652': 'Lock failed'
-    }
+    '622_NONE': 'locked',
+    '622_IN_FGP': 'unlocked',
+    '622_IN_RFC': 'unlocked',
+    '622_OUT': 'unlocked',
+    '622_IN_SVR': 'unlocked',
+    '620': 'unlock_failed_5_times',
+    '648': 'unlocked_for_30_seconds',
+    '652': 'lock_failed'
 }
 
-OPEN_TYPE = {
-    "ko": {
-        'FGP': '지문',
-        'SVR': '앱',
-        'RFC': '키택'
-    },
-    "en": {
-        'FGP': 'Fingerprint',
-        'SVR': 'App',
-        'RFC': 'Keytag'
-    }
+UNLOCK_TOOL = {
+    'FGP': 'fingerprint',
+    'SVR': 'application',
+    'RFC': 'keytag',
+    'INDOOR': 'in_door',
+    '622_IN_FGP': 'fingerprint',
+    '622_IN_RFC': 'keytag',
+    '622_OUT': 'in_door',
+    '622_IN_SVR': 'application',
 }
