@@ -49,7 +49,7 @@ ha-zigbang-doorlock/
 | `last_event_at` | 마지막 이벤트 발생 시간 | ISO 8601 시간 (예: `2024-05-18T14:30:00+09:00`) |
 | `last_message` | 직방 API 알림 메시지 원문 | 문자열 (예: `홍길동님이 지문으로 문을 열었습니다.`) |
 | `last_alert_type` | 도어락 상태 및 이벤트 유형 | `locked`, `unlocked`, `unlock_failed_5_times`, `unlocked_for_30_seconds`, `lock_failed` |
-| `last_unlock_tool` | 잠금 해제 인증 수단 | `fingerprint`(지문), `application`(앱), `keytag`(카드), `in_door`(내부 수동), `null`(없음) |
+| `last_unlock_tool` | 잠금 해제 인증 수단 | `fingerprint`(지문), `application`(앱), `keytag`(카드), `voice`(음성), `face`(얼굴인식), `number`(키패드입력), `in_door_button`(내부 수동), `null`(없음) |
 | `last_user_name` | 인증된 사용자의 이름 | 사용자 이름 (예: `홍길동`) 또는 `null` |
 | `event_id` | 직방 시스템의 이벤트 고유 식별자 | 숫자/문자열 ID (예: `12345678`) |
 
