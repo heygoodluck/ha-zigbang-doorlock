@@ -1,8 +1,8 @@
 import logging
 from homeassistant.components.event import EventEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN, ALERT_TYPE, UNLOCK_TOOL
-from .util import rawdt_to_utc
+from .const import DOMAIN, ALERT_TYPE
+from .util import rawdt_to_utc, get_unlock_tool_in_raw, get_user_name_in_raw
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,8 +52,8 @@ class ZigbangDoorlockEvent(CoordinatorEntity, EventEntity):
                 {
                     "message": evt.get("msgText"),
                     "alert_type": ALERT_TYPE.get(evt.get("msgCd"), evt.get("msgCd")),
-                    "unlock_tool": UNLOCK_TOOL.get(evt.get("msgCd")),
-                    "user_name": evt.get("eventMemberNm") if evt.get("msgCd") == "622_IN_SVR" else evt.get("pinNm"),
+                    "unlock_tool": get_unlock_tool_in_raw(evt),
+                    "user_name": get_user_name_in_raw(evt),
                     "alert_at": formatted_dt,
                 }
             )

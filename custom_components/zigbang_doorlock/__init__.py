@@ -7,8 +7,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.storage import Store
 from .api import ZigbangAPI
-from .const import DOMAIN, ALERT_TYPE, UNLOCK_TOOL
-from .util import rawdt_to_utc
+from .const import DOMAIN, ALERT_TYPE
+from .util import rawdt_to_utc, get_unlock_tool_in_raw, get_user_name_in_raw
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,8 +77,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     event_data = {
                         "message": evt.get("msgText"),
                         "alert_type": ALERT_TYPE.get(evt.get("msgCd"), evt.get("msgCd")),
-                        "unlock_tool": UNLOCK_TOOL.get(evt.get("msgCd")),
-                        "user_name": evt.get("eventMemberNm") if evt.get("msgCd") == "622_IN_SVR" else evt.get("pinNm"),
+                        "unlock_tool": get_unlock_tool_in_raw(evt),
+                        "user_name": get_user_name_in_raw(evt),
                         "alert_at": rawdt_to_utc(evt.get("rgstDt")),
                         "device_id": device_id
                     }

@@ -2,6 +2,7 @@ import logging
 import random
 from homeassistant.util import dt as dt_util
 from datetime import datetime
+from .const import UNLOCK_TOOL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,3 +52,17 @@ def rawdt_to_utc(raw_dt: str) -> str:
         except Exception as e:
             _LOGGER.error("시간 변환 오류: %s", e)
     return formatted_dt
+
+def get_unlock_tool_in_raw(evt: dict) -> str | None:
+    pin_type_cd = evt.get("pinTypeCd")
+    if pin_type_cd and pin_type_cd in UNLOCK_TOOL:
+        return UNLOCK_TOOL[pin_type_cd].get('name')
+    return None
+
+def get_user_name_in_raw(evt: dict) -> str | None:
+    pin_type_cd = evt.get("pinTypeCd")
+    if pin_type_cd and pin_type_cd in UNLOCK_TOOL:
+        key = UNLOCK_TOOL[pin_type_cd].get('user_name_key')
+        if key:
+            return evt.get(key)
+    return None
