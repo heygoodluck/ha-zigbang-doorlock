@@ -22,26 +22,48 @@ ALERT_TYPE = {
 }
 
 UNLOCK_TOOL = {
-    'BLE': 'bluetooth',
-    'FCE': 'face',
-    'FGP': 'fingerprint',
-    'MST': 'mst',
-    'NFC': 'nfc',
-    'NUM': 'number',
-    'RFC': 'keytag',
-    'RMC': 'remote_controller',
-    'SVR': 'application',
-    'VCE': 'voice',
-    'INDOOR': 'in_door_button',
-    '622_IN_BLE': 'bluetooth',
-    '622_IN_FCE': 'face',
-    '622_IN_FGP': 'fingerprint',
-    '622_IN_MST': 'mst',
-    '622_IN_NFC': 'nfc',
-    '622_IN_NUM': 'number',
-    '622_IN_RFC': 'keytag',
-    '622_IN_RMC': 'remote_controller',
-    '622_IN_SVR': 'application',
-    '622_IN_VCE': 'voice',
-    '622_OUT': 'in_door_button',
+    'BLE': {
+        'name': 'bluetooth',
+        'user_name_key': "pinNm"
+    },
+    'FCE': {
+        'name': 'face',
+        'user_name_key': "pinNm"
+    },
+    'FGP': {
+        'name': 'fingerprint',
+        'user_name_key': "pinNm"
+    },
+    'MST': {
+        'name': 'mst',
+        'user_name_key': "eventMemberNm"
+    },
+    'NFC': {
+        'name': 'nfc',
+        'user_name_key': "eventMemberNm"
+    },
+    'NUM': {
+        'name': 'number',
+        'user_name_key': None
+    },
+    'RFC': {
+        'name': 'keytag',
+        'user_name_key': "pinNm"
+    },
+    'RMC': {
+        'name': 'remote_controller',
+        'user_name_key': "pinNm"
+    },
+    'SVR': {
+        'name': 'application',
+        'user_name_key': "eventMemberNm"
+    },
+    'VCE': {
+        'name': 'voice',
+        'user_name_key': "pinNm"
+    },
+    'INDOOR': {
+        'name': 'in_door_button',
+        'user_name_key': None
+    }
 }

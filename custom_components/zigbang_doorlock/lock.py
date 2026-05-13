@@ -61,11 +61,22 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
         raw_dt = history.get("rgstDt")
         formatted_dt = rawdt_to_utc(raw_dt)
 
+        msg_cd = history.get("msgCd") or ""
+        tool_code = None
+        if msg_cd == "622_OUT":
+            tool_code = "INDOOR"
+        elif msg_cd == "622_NONE":
+            tool_code = None
+        elif msg_cd.startswith("622"):
+            tool_code = msg_cd[-3:]
+            
+        unlock_tool_info = UNLOCK_TOOL.get(tool_code) if tool_code else {}
+
         return {
             "last_event_at": formatted_dt,
             "last_message": history.get("msgText"),
-            "last_alert_type": ALERT_TYPE.get(history.get("msgCd"), history.get("msgCd")),
-            "last_unlock_tool": UNLOCK_TOOL.get(history.get("msgCd")),
+            "last_alert_type": ALERT_TYPE.get(msg_cd, msg_cd) if msg_cd else None,
+            "last_unlock_tool": unlock_tool_info.get("name"),
             "last_user_name": history.get("pinNm"),
             "event_id": history.get("eventId")
         }
