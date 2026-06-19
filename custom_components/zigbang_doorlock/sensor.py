@@ -29,6 +29,15 @@ class ZigbangBatterySensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, device_id):
         super().__init__(coordinator)
         self._device_id = device_id
+        
+        device = self.coordinator.data[self._device_id]
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, device_id)},
+            "name": device.get("userNick", "Zigbang Doorlock"),
+            "model": device.get("modelNm", "SHP-Series"),
+            "manufacturer": "Samsung",
+        }
+
         self._attr_unique_id = f"{device_id}_battery"
         self._attr_device_class = SensorDeviceClass.BATTERY
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -36,17 +45,7 @@ class ZigbangBatterySensor(CoordinatorEntity, SensorEntity):
         self._attr_has_entity_name = True
         self._attr_translation_key = "battery"
 
-        # 도어락 엔티티와 같은 기기로 묶어줌
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, device_id)},
-        }
-
-    @property
-    def _device_data(self):
-        return self.coordinator.data.get(self._device_id, {})
-
     @property
     def native_value(self):
         """배터리 잔량 반환 (doorlockStatusVO -> battery)"""
-        status = self._device_data.get("doorlockStatusVO", {})
-        return status.get("battery")
+        return self.coordinator.data[self._device_id].get("doorlockStatusVO", {}).get("battery")

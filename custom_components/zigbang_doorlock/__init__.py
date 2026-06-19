@@ -13,7 +13,7 @@ from .util import rawdt_to_utc, get_unlock_tool_in_raw, get_user_name_in_raw
 _LOGGER = logging.getLogger(__name__)
 
 # 지원하는 플랫폼 플랫폼 정의
-PLATFORMS = ["lock", "sensor", "event"]
+PLATFORMS = ["lock", "sensor", "event", "switch"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """통합 구성 요소 설정 """

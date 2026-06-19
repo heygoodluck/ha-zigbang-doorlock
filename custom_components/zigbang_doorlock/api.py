@@ -184,3 +184,31 @@ class ZigbangAPI:
 
         _LOGGER.error("[Zigbang] 도어락 열기 명령 실패")
         return False
+        
+    async def set_security_mode(self, session: aiohttp.ClientSession, device_id: str, is_security_mode: bool) -> bool:
+        """재택안심모드 설정/해제"""
+        if not self.member_id:
+            _LOGGER.error("[Zigbang] memberId가 없어 제어 명령을 보낼 수 없습니다.")
+            return False
+
+        uri = "/v20/doorlockctrl/setmode"
+        body = {
+            "createDate": self._get_timestamp(),
+            "deviceId": device_id,
+            "memberId": self.member_id,
+            "isSecurityMode": is_security_mode,
+            "securityModeRptEndDt": "",
+            "securityModeRptStartDt": ""
+        }
+
+        # 해시 데이터는 필요하지 않으므로, 아래 해시관련된건 다 제거.
+        # body["hashData"] = self._generate_hash_data(body)
+
+        data = await self.async_request("PUT", uri, session, body=body)
+
+        if data and data.get("result"):
+            _LOGGER.info(f"[Zigbang] 재택안심모드 {'설정' if is_security_mode else '해제'} 명령 성공: {device_id}")
+            return True
+
+        _LOGGER.error(f"[Zigbang] 재택안심모드 {'설정' if is_security_mode else '해제'} 명령 실패")
+        return False
