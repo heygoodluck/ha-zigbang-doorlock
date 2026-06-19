@@ -58,6 +58,11 @@
           }
         }
       }
+    },
+    "switch": {
+      "home_security_mode": {
+        "name": "Home Security Mode"
+      }
     }
   }
 }

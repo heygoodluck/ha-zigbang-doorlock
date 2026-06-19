@@ -58,6 +58,11 @@
           }
         }
       }
+    },
+    "switch": {
+      "home_security_mode": {
+        "name": "재택 안심 모드"
+      }
     }
   }
 }

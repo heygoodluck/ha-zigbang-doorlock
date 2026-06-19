@@ -11,10 +11,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """lock 플랫폼 설정"""
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
+    api = data["api"]
 
     # 코디네이터 데이터(dict)의 key인 deviceId를 순회하며 엔티티 생성
     entities = [
-        ZigbangDoorlock(coordinator, device_id)
+        ZigbangDoorlock(coordinator, api, device_id)
         for device_id in coordinator.data
     ]
 
@@ -24,32 +25,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class ZigbangDoorlock(CoordinatorEntity, LockEntity):
     """직방 도어락 엔티티 (코디네이터 연동)"""
 
-    def __init__(self, coordinator, device_id):
+    def __init__(self, coordinator, api, device_id):
         super().__init__(coordinator)
+        self.api = api
         self._device_id = device_id
+
+        device = self.coordinator.data[self._device_id]
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, device_id)},
+            "name": device.get("userNick", "Zigbang Doorlock"),
+            "model": device.get("modelNm", "SHP-Series"),
+            "manufacturer": "Samsung",
+        }
+
         # 고정값 설정
         self._attr_unique_id = f"{device_id}_lock"
         self._attr_has_entity_name = True
         self._attr_translation_key = "zigbang_doorlock"
         self._attr_name = None # 기기 이름은 device_info의 name을 따름
 
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, device_id)},
-            "name": self._device_data.get("deviceNm", "Zigbang Doorlock"),
-            "model": self._device_data.get("productId", "SHP-Series"),
-            "manufacturer": "Zigbang",
-        }
-
-    @property
-    def _device_data(self):
-        """코디네이터에서 내 기기의 최신 데이터 추출"""
-        return self.coordinator.data.get(self._device_id, {})
-
     @property
     def is_locked(self):
         """잠금 상태 반환 (doorlockStatusVO -> locked)"""
-        status = self._device_data.get("doorlockStatusVO", {})
-        return status.get("locked", True)
+        return self.coordinator.data[self._device_id].get("doorlockStatusVO", {}).get("locked", True)
 
     @property
     def extra_state_attributes(self):
@@ -83,15 +81,16 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
 
     async def async_unlock(self, **kwargs):
         """도어락 열기 명령 실행"""
-        api = self.coordinator.hass.data[DOMAIN][self.coordinator.config_entry.entry_id]["api"]
         session = async_get_clientsession(self.coordinator.hass)
 
         _LOGGER.debug("[Zigbang] %s 기기에 열기 명령을 전송합니다.", self.name)
 
         # API 호출
-        success = await api.control_unlock(session, self._device_id)
+        success = await self.api.control_unlock(session, self._device_id)
 
         if success:
+            self.coordinator.data[self._device_id]["doorlockStatusVO"]["locked"] = False
+            self.async_write_ha_state()
             # 명령 성공 시 즉시 상태를 업데이트하여 사용자에게 피드백 제공
             # (실제 문이 열린 뒤 다음 30초 주기에서 다시 확인됨)
             await self.coordinator.async_request_refresh()
