@@ -45,7 +45,7 @@ class ZigbangHomeSecurityModeSwitch(CoordinatorEntity, SwitchEntity):
         self._attr_translation_key = "home_security_mode"
         # Fallback name used when custom integration translations are not loaded yet.
         # Without this, Home Assistant can display only the device name for the switch.
-        self._attr_name = "Home Security Mode"
+        self._attr_name = "재택 안심 모드"
 
 
     @property
