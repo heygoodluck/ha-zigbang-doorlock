@@ -37,6 +37,15 @@ class ZigbangAPI:
         combined_values = "".join([str(v) for v in payload.values() if v is not None])
         return self._hash(combined_values)
 
+    def _generate_sorted_hash_data(self, payload: Dict[str, Any]) -> str:
+        """Generate hashData using the official app's CommonUpdateVO ordering."""
+        combined_values = "".join(
+            str(payload[key])
+            for key in sorted(payload)
+            if key != "hashData" and payload[key] not in (None, "")
+        )
+        return self._hash(combined_values)
+
     def _get_headers(self) -> Dict[str, str]:
         headers = {
             "Content-Type": "application/json",
@@ -211,4 +220,104 @@ class ZigbangAPI:
             return True
 
         _LOGGER.error(f"[Zigbang] 재택안심모드 {'설정' if is_security_mode else '해제'} 명령 실패")
+        return False
+
+    async def fetch_door_keys(self, session: aiohttp.ClientSession, device_id: str, pin_types: str):
+        """카드키/지문/임시 비밀번호 등 도어락 키 목록 조회."""
+        if not self.member_id:
+            _LOGGER.error("[Zigbang] memberId가 없어 키 목록을 조회할 수 없습니다.")
+            return []
+
+        uri = "/v20/doorlockctrl/getdoorkeys"
+        params = {
+            "memberId": self.member_id,
+            "deviceId": device_id,
+            "pinTypes": pin_types,
+            "createDate": self._get_timestamp(),
+        }
+        params["hashData"] = self._generate_hash_data(params)
+
+        data = await self.async_request("GET", uri, session, params=params)
+        if data and data.get("result"):
+            return data.get("pinInfos", []) or []
+
+        _LOGGER.error("[Zigbang] 키 목록 조회 실패: device_id=%s pin_types=%s", device_id, pin_types)
+        return []
+
+    async def fetch_card_keys(self, session: aiohttp.ClientSession, device_id: str):
+        """카드키(RFC) 목록 조회."""
+        return await self.fetch_door_keys(session, device_id, "RFC")
+
+    async def fetch_fingerprints(self, session: aiohttp.ClientSession, device_id: str):
+        """지문(FGP) 목록 조회."""
+        return await self.fetch_door_keys(session, device_id, "FGP")
+
+    async def delete_card_key(
+        self,
+        session: aiohttp.ClientSession,
+        device_id: str,
+        pin_id: int,
+        pin_name: str = "",
+        pin: Optional[str] = None,
+    ) -> bool:
+        """카드키(RFC) 삭제."""
+        if not self.member_id:
+            _LOGGER.error("[Zigbang] memberId가 없어 카드키를 삭제할 수 없습니다.")
+            return False
+
+        uri = "/v20/doorlockctrl/updaterfcardkey"
+        body = {
+            "deviceId": device_id,
+            "memberId": self.member_id,
+            "pinId": int(pin_id),
+            "pinType": "RFC",
+            "pin": pin,
+            "pinName": pin_name or "",
+            "isDelete": True,
+            "createDate": self._get_timestamp(),
+        }
+        body["hashData"] = self._generate_sorted_hash_data(body)
+
+        data = await self.async_request("PUT", uri, session, body=body)
+        if data and data.get("result"):
+            _LOGGER.info("[Zigbang] 카드키 삭제 성공: device_id=%s pin_id=%s", device_id, pin_id)
+            return True
+
+        _LOGGER.error("[Zigbang] 카드키 삭제 실패: device_id=%s pin_id=%s", device_id, pin_id)
+        return False
+
+    async def delete_fingerprint(
+        self,
+        session: aiohttp.ClientSession,
+        device_id: str,
+        pin_id: int,
+        pin_name: str = "",
+        pin_member_id: str = "",
+        pin: Optional[str] = "0",
+    ) -> bool:
+        """지문(FGP) 삭제."""
+        if not self.member_id:
+            _LOGGER.error("[Zigbang] memberId가 없어 지문을 삭제할 수 없습니다.")
+            return False
+
+        uri = "/v20/doorlockctrl/updatefgpkey"
+        body = {
+            "deviceId": device_id,
+            "memberId": self.member_id,
+            "pinId": int(pin_id),
+            "pinType": "FGP",
+            "pin": pin,
+            "pinName": pin_name or "",
+            "pinMemberId": pin_member_id or "",
+            "isDelete": True,
+            "createDate": self._get_timestamp(),
+        }
+        body["hashData"] = self._generate_sorted_hash_data(body)
+
+        data = await self.async_request("PUT", uri, session, body=body)
+        if data and data.get("result"):
+            _LOGGER.info("[Zigbang] 지문 삭제 성공: device_id=%s pin_id=%s", device_id, pin_id)
+            return True
+
+        _LOGGER.error("[Zigbang] 지문 삭제 실패: device_id=%s pin_id=%s", device_id, pin_id)
         return False

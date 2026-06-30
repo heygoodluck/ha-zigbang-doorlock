@@ -1,8 +1,9 @@
 import logging
 from datetime import timedelta
 
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.storage import Store
@@ -10,10 +11,42 @@ from .api import ZigbangAPI
 from .const import DOMAIN, ALERT_TYPE
 from .util import rawdt_to_utc, get_unlock_tool_in_raw, get_user_name_in_raw
 
+try:
+    from homeassistant.core import SupportsResponse
+except ImportError:  # pragma: no cover - older Home Assistant versions
+    SupportsResponse = None
+
 _LOGGER = logging.getLogger(__name__)
+
+DEVICE_ID_SCHEMA = vol.Schema({vol.Optional("device_id"): str})
+DELETE_CARD_KEY_SCHEMA = vol.Schema({
+    vol.Optional("device_id"): str,
+    vol.Required("pin_id"): vol.Coerce(int),
+    vol.Optional("pin_name", default=""): str,
+    vol.Optional("pin", default=None): vol.Any(str, None),
+})
+DELETE_FINGERPRINT_SCHEMA = vol.Schema({
+    vol.Optional("device_id"): str,
+    vol.Required("pin_id"): vol.Coerce(int),
+    vol.Optional("pin_name", default=""): str,
+    vol.Optional("pin_member_id", default=""): str,
+    vol.Optional("pin", default="0"): vol.Any(str, None),
+})
 
 # 지원하는 플랫폼 플랫폼 정의
 PLATFORMS = ["lock", "sensor", "event", "switch"]
+
+def _resolve_device_id(coordinator: DataUpdateCoordinator, service_device_id: str | None) -> str:
+    """Resolve service device_id, defaulting to the only paired doorlock."""
+    if service_device_id:
+        if service_device_id not in coordinator.data:
+            raise ValueError(f"Unknown Zigbang device_id: {service_device_id}")
+        return service_device_id
+
+    device_ids = list(coordinator.data or {})
+    if len(device_ids) == 1:
+        return device_ids[0]
+    raise ValueError("device_id is required when multiple Zigbang doorlocks are configured")
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """통합 구성 요소 설정 """
@@ -115,6 +148,58 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "coordinator": coordinator
     }
 
+    async def async_get_card_keys(call: ServiceCall):
+        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        keys = await api.fetch_card_keys(session, device_id)
+        return {"device_id": device_id, "pin_type": "RFC", "pin_infos": keys}
+
+    async def async_get_fingerprints(call: ServiceCall):
+        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        keys = await api.fetch_fingerprints(session, device_id)
+        return {"device_id": device_id, "pin_type": "FGP", "pin_infos": keys}
+
+    async def async_delete_card_key(call: ServiceCall):
+        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        success = await api.delete_card_key(
+            session,
+            device_id,
+            call.data["pin_id"],
+            call.data.get("pin_name", ""),
+            call.data.get("pin"),
+        )
+        await coordinator.async_request_refresh()
+        return {"device_id": device_id, "pin_id": call.data["pin_id"], "success": success}
+
+    async def async_delete_fingerprint(call: ServiceCall):
+        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        success = await api.delete_fingerprint(
+            session,
+            device_id,
+            call.data["pin_id"],
+            call.data.get("pin_name", ""),
+            call.data.get("pin_member_id", ""),
+            call.data.get("pin", "0"),
+        )
+        await coordinator.async_request_refresh()
+        return {"device_id": device_id, "pin_id": call.data["pin_id"], "success": success}
+
+    response_kwargs = {}
+    if SupportsResponse is not None:
+        response_kwargs["supports_response"] = SupportsResponse.OPTIONAL
+
+    hass.services.async_register(
+        DOMAIN, "get_card_keys", async_get_card_keys, schema=DEVICE_ID_SCHEMA, **response_kwargs
+    )
+    hass.services.async_register(
+        DOMAIN, "get_fingerprints", async_get_fingerprints, schema=DEVICE_ID_SCHEMA, **response_kwargs
+    )
+    hass.services.async_register(
+        DOMAIN, "delete_card_key", async_delete_card_key, schema=DELETE_CARD_KEY_SCHEMA, **response_kwargs
+    )
+    hass.services.async_register(
+        DOMAIN, "delete_fingerprint", async_delete_fingerprint, schema=DELETE_FINGERPRINT_SCHEMA, **response_kwargs
+    )
+
     # 5. 플랫폼(lock.py, sensor.py) 로드
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -125,4 +210,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
+        if not hass.data[DOMAIN]:
+            for service in (
+                "get_card_keys",
+                "get_fingerprints",
+                "delete_card_key",
+                "delete_fingerprint",
+            ):
+                hass.services.async_remove(DOMAIN, service)
     return unload_ok

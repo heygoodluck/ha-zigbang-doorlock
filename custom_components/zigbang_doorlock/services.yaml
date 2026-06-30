@@ -1,0 +1,89 @@
+get_card_keys:
+  name: 카드키 목록 조회
+  description: 직방 도어락에 등록된 카드키(RFC) 목록을 조회합니다.
+  fields:
+    device_id:
+      name: 기기 ID
+      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      example: "1234567890"
+      selector:
+        text:
+
+get_fingerprints:
+  name: 지문 목록 조회
+  description: 직방 도어락에 등록된 지문(FGP) 목록을 조회합니다.
+  fields:
+    device_id:
+      name: 기기 ID
+      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      example: "1234567890"
+      selector:
+        text:
+
+delete_card_key:
+  name: 카드키 삭제
+  description: 직방 도어락에 등록된 카드키(RFC)를 pin_id 기준으로 삭제합니다.
+  fields:
+    device_id:
+      name: 기기 ID
+      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      example: "1234567890"
+      selector:
+        text:
+    pin_id:
+      name: PIN ID
+      description: get_card_keys 서비스로 확인한 카드키의 pinId입니다.
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 0
+          mode: box
+    pin_name:
+      name: 카드키 이름
+      description: 카드키 이름입니다. 삭제 시 선택값입니다.
+      example: "카드키 1"
+      selector:
+        text:
+    pin:
+      name: PIN 값
+      description: 카드키 PIN 원문입니다. 보통 삭제 시 비워둘 수 있습니다.
+      selector:
+        text:
+
+delete_fingerprint:
+  name: 지문 삭제
+  description: 직방 도어락에 등록된 지문(FGP)을 pin_id 기준으로 삭제합니다.
+  fields:
+    device_id:
+      name: 기기 ID
+      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      example: "1234567890"
+      selector:
+        text:
+    pin_id:
+      name: PIN ID
+      description: get_fingerprints 서비스로 확인한 지문의 pinId입니다.
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 0
+          mode: box
+    pin_name:
+      name: 지문 이름
+      description: 지문 이름입니다. 삭제 시 선택값입니다.
+      example: "엄지 지문"
+      selector:
+        text:
+    pin_member_id:
+      name: PIN 회원 ID
+      description: get_fingerprints 응답의 pinMemberId입니다. 없으면 비워둘 수 있습니다.
+      selector:
+        text:
+    pin:
+      name: PIN 값
+      description: 공식 앱은 지문 삭제 시 기본값으로 "0"을 보냅니다.
+      default: "0"
+      selector:
+        text:
