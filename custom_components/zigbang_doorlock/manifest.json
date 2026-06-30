@@ -5,7 +5,7 @@
     "minseok.lee.128@gmail.com"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/minseokhappylee/ha-zigbang-doorlock",
+  "documentation": "https://github.com/heygoodluck/ha-zigbang-doorlock",
   "iot_class": "cloud_polling",
   "version": "1.0.0",
   "integration_type": "hub",

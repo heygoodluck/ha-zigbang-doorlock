@@ -1,0 +1,6 @@
+{
+  "name": "Zigbang Doorlock",
+  "render_readme": true,
+  "domains": ["lock", "sensor", "switch", "event"],
+  "homeassistant": "2024.1.0"
+}

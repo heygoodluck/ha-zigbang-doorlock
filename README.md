@@ -70,23 +70,34 @@ ha-zigbang-doorlock/
 
 ---
 
-### **�� 설치 및 설정**
+### **🔧 설치 및 설정**
 
-#### **1. 수동 설치**
+#### **1. HACS 설치 (권장)**
+1. Home Assistant 사이드바에서 **HACS**로 이동합니다.
+2. 우측 상단 **⋮** 메뉴에서 **사용자 정의 저장소(Custom repositories)**를 선택합니다.
+3. 저장소 URL에 아래 주소를 입력합니다.
+   ```text
+   https://github.com/heygoodluck/ha-zigbang-doorlock
+   ```
+4. Category는 **Integration**으로 선택한 뒤 **Add**를 누릅니다.
+5. HACS에서 **Zigbang Doorlock** 또는 **직방 도어락**을 검색해 설치합니다.
+6. Home Assistant를 **재시작**합니다.
+
+#### **2. 수동 설치**
 1. Home Assistant의 설정 디렉토리(`config/`) 내부의 `custom_components/` 폴더로 이동합니다. (폴더가 없으면 생성하세요.)
-2. `custom_components/zigbang_doorlock/` 폴더를 생성하고 Repo 내 `custom_components/zigbang-doorlock/` 모든 파일을 해당 경로에 복사합니다.
+2. Repo 내 `custom_components/zigbang_doorlock/` 폴더를 Home Assistant의 `custom_components/zigbang_doorlock/` 경로로 복사합니다.
 3. Home Assistant를 **재시작**합니다.
 
-#### **2. Home Assistant 설정**
-아래 2-1 UI 설정 혹은 2-2 YAML 파일 설정 중 하나를 수행한다.
+#### **3. Home Assistant 설정**
+아래 3-1 UI 설정 혹은 3-2 YAML 파일 설정 중 하나를 수행합니다.
 
-##### **2-1. 통합 구성요소 추가 (UI 설정)**
+##### **3-1. 통합 구성요소 추가 (UI 설정)**
 1. Home Assistant 사이드바에서 **설정(Settings)** > **기기 및 서비스(Devices & Services)**로 이동합니다.
 2. 우측 하단의 **통합 구성요소 추가(Add Integration)** 버튼을 클릭합니다.
 3. **Zigbang Doorlock**을 검색하여 선택합니다.
 4. 직방 계정 정보(아이디, 비밀번호)와 IMEI(선택 사항)를 입력하고 확인을 누릅니다.
 
-##### **2-2. YAML 설정 (Configuration 수동 설정)**
+##### **3-2. YAML 설정 (Configuration 수동 설정)**
 `configuration.yaml` 파일에 아래 내용을 추가하고 사용자 정보를 입력합니다.
 ```yaml
 # zigbang_doorlock 설정 예시
