@@ -115,3 +115,29 @@ delete_fingerprint:
       default: "0"
       selector:
         text:
+
+delete_selected_card_key:
+  name: 선택한 카드키 삭제
+  description: 카드키 선택 엔티티에서 현재 선택된 카드키를 삭제합니다. 카드키 선택 엔티티는 등록된 카드키를 자동 조회해 드롭다운으로 보여줍니다.
+  fields:
+    entity_id:
+      name: 카드키 선택 엔티티
+      description: 삭제할 카드키가 선택되어 있는 카드키 선택 엔티티입니다.
+      required: true
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: select
+
+delete_selected_fingerprint:
+  name: 선택한 지문 삭제
+  description: 지문 선택 엔티티에서 현재 선택된 지문을 삭제합니다. 지문 선택 엔티티는 등록된 지문을 자동 조회해 드롭다운으로 보여줍니다.
+  fields:
+    entity_id:
+      name: 지문 선택 엔티티
+      description: 삭제할 지문이 선택되어 있는 지문 선택 엔티티입니다.
+      required: true
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: select

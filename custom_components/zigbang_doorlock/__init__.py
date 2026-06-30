@@ -38,9 +38,10 @@ DELETE_FINGERPRINT_SCHEMA = vol.Schema({
     vol.Optional("pin_member_id", default=""): str,
     vol.Optional("pin", default="0"): vol.Any(str, None),
 })
+DELETE_SELECTED_KEY_SCHEMA = vol.Schema({vol.Required("entity_id"): str})
 
 # 지원하는 플랫폼 플랫폼 정의
-PLATFORMS = ["lock", "sensor", "event", "switch"]
+PLATFORMS = ["lock", "sensor", "event", "switch", "select"]
 
 def _resolve_device_id(
     hass: HomeAssistant,
@@ -203,6 +204,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_request_refresh()
         return {"device_id": device_id, "pin_id": call.data["pin_id"], "success": success}
 
+    async def async_delete_selected_card_key(call: ServiceCall):
+        state = hass.states.get(call.data["entity_id"])
+        if state is None:
+            raise ValueError(f"Unknown select entity_id: {call.data['entity_id']}")
+        if state.attributes.get("pin_type") != "RFC":
+            raise ValueError("Selected entity is not a Zigbang card-key select entity")
+        device_id = state.attributes.get("device_id")
+        pin_id = state.attributes.get("selected_pin_id")
+        if pin_id is None:
+            raise ValueError("No card key is selected")
+        success = await api.delete_card_key(
+            session,
+            device_id,
+            pin_id,
+            state.attributes.get("selected_pin_name", ""),
+            state.attributes.get("selected_pin"),
+        )
+        if success:
+            await hass.services.async_call(
+                "homeassistant", "update_entity", {"entity_id": call.data["entity_id"]}, blocking=True
+            )
+        return {"device_id": device_id, "pin_id": pin_id, "success": success}
+
+    async def async_delete_selected_fingerprint(call: ServiceCall):
+        state = hass.states.get(call.data["entity_id"])
+        if state is None:
+            raise ValueError(f"Unknown select entity_id: {call.data['entity_id']}")
+        if state.attributes.get("pin_type") != "FGP":
+            raise ValueError("Selected entity is not a Zigbang fingerprint select entity")
+        device_id = state.attributes.get("device_id")
+        pin_id = state.attributes.get("selected_pin_id")
+        if pin_id is None:
+            raise ValueError("No fingerprint is selected")
+        success = await api.delete_fingerprint(
+            session,
+            device_id,
+            pin_id,
+            state.attributes.get("selected_pin_name", ""),
+            state.attributes.get("selected_pin_member_id", ""),
+            state.attributes.get("selected_pin", "0"),
+        )
+        if success:
+            await hass.services.async_call(
+                "homeassistant", "update_entity", {"entity_id": call.data["entity_id"]}, blocking=True
+            )
+        return {"device_id": device_id, "pin_id": pin_id, "success": success}
+
     response_kwargs = {}
     if SupportsResponse is not None:
         response_kwargs["supports_response"] = SupportsResponse.OPTIONAL
@@ -218,6 +266,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     hass.services.async_register(
         DOMAIN, "delete_fingerprint", async_delete_fingerprint, schema=DELETE_FINGERPRINT_SCHEMA, **response_kwargs
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "delete_selected_card_key",
+        async_delete_selected_card_key,
+        schema=DELETE_SELECTED_KEY_SCHEMA,
+        **response_kwargs,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "delete_selected_fingerprint",
+        async_delete_selected_fingerprint,
+        schema=DELETE_SELECTED_KEY_SCHEMA,
+        **response_kwargs,
     )
 
     # 5. 플랫폼(lock.py, sensor.py) 로드
@@ -236,6 +298,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "get_fingerprints",
                 "delete_card_key",
                 "delete_fingerprint",
+                "delete_selected_card_key",
+                "delete_selected_fingerprint",
             ):
                 hass.services.async_remove(DOMAIN, service)
     return unload_ok
