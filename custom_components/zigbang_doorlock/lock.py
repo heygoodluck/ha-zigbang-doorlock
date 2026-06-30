@@ -42,7 +42,7 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
         self._attr_unique_id = f"{device_id}_lock"
         self._attr_has_entity_name = True
         self._attr_translation_key = "zigbang_doorlock"
-        self._attr_name = None # 기기 이름은 device_info의 name을 따름
+        self._attr_name = "도어락"
 
     @property
     def is_locked(self):
