@@ -43,7 +43,9 @@ class ZigbangHomeSecurityModeSwitch(CoordinatorEntity, SwitchEntity):
         self._attr_unique_id = f"{self._device_id}_home_security_mode"
         self._attr_has_entity_name = True
         self._attr_translation_key = "home_security_mode"
-        self._attr_name = None
+        # Fallback name used when custom integration translations are not loaded yet.
+        # Without this, Home Assistant can display only the device name for the switch.
+        self._attr_name = "Home Security Mode"
 
 
     @property
@@ -67,5 +69,4 @@ class ZigbangHomeSecurityModeSwitch(CoordinatorEntity, SwitchEntity):
         if result:
             self.coordinator.data[self._device_id]["doorlockStatusVO"]["dummyMode"] = False
             self.async_write_ha_state()
-        await self.coordinator.async_request_refresh()
         await self.coordinator.async_request_refresh()
