@@ -122,18 +122,20 @@ zigbang_doorlock:
 ### **🔑 카드키/지문 관리 서비스**
 
 Home Assistant의 **개발자 도구 → 서비스**에서 아래 서비스를 호출할 수 있습니다.
-도어락이 1개만 등록되어 있으면 `device_id`는 생략할 수 있습니다.
+서비스 UI에서 **도어락 엔티티**를 선택할 수 있으며, 도어락이 1개만 등록되어 있으면 `entity_id`/`device_id`를 생략할 수 있습니다.
 
 #### 카드키 목록 조회
 ```yaml
 service: zigbang_doorlock.get_card_keys
-data: {}
+data:
+  entity_id: lock.doorlock
 ```
 
 #### 지문 목록 조회
 ```yaml
 service: zigbang_doorlock.get_fingerprints
-data: {}
+data:
+  entity_id: lock.doorlock
 ```
 
 목록 조회 응답의 `pinInfos`에서 삭제할 항목의 `pinId`를 확인합니다.
@@ -142,6 +144,7 @@ data: {}
 ```yaml
 service: zigbang_doorlock.delete_card_key
 data:
+  entity_id: lock.doorlock
   pin_id: 1
 ```
 
@@ -149,10 +152,11 @@ data:
 ```yaml
 service: zigbang_doorlock.delete_fingerprint
 data:
+  entity_id: lock.doorlock
   pin_id: 1
 ```
 
-여러 도어락을 사용하는 경우에는 각 서비스에 `device_id`를 함께 넣어야 합니다.
+여러 도어락을 사용하는 경우에는 각 서비스에서 `entity_id`로 도어락을 선택하거나, 고급 사용자용 `device_id`를 직접 넣어야 합니다.
 
 ---
 

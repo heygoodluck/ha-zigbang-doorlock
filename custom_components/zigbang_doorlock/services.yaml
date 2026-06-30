@@ -2,9 +2,16 @@ get_card_keys:
   name: 카드키 목록 조회
   description: 직방 도어락에 등록된 카드키(RFC) 목록을 조회합니다.
   fields:
+    entity_id:
+      name: 도어락 엔티티
+      description: UI에서 선택할 도어락 잠금장치 엔티티입니다. 도어락이 1개면 생략할 수 있습니다.
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: lock
     device_id:
       name: 기기 ID
-      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      description: 고급 사용자용 원본 도어락 deviceId입니다. 보통은 위의 도어락 엔티티를 선택하세요.
       example: "1234567890"
       selector:
         text:
@@ -13,9 +20,16 @@ get_fingerprints:
   name: 지문 목록 조회
   description: 직방 도어락에 등록된 지문(FGP) 목록을 조회합니다.
   fields:
+    entity_id:
+      name: 도어락 엔티티
+      description: UI에서 선택할 도어락 잠금장치 엔티티입니다. 도어락이 1개면 생략할 수 있습니다.
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: lock
     device_id:
       name: 기기 ID
-      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      description: 고급 사용자용 원본 도어락 deviceId입니다. 보통은 위의 도어락 엔티티를 선택하세요.
       example: "1234567890"
       selector:
         text:
@@ -24,9 +38,16 @@ delete_card_key:
   name: 카드키 삭제
   description: 직방 도어락에 등록된 카드키(RFC)를 pin_id 기준으로 삭제합니다.
   fields:
+    entity_id:
+      name: 도어락 엔티티
+      description: UI에서 선택할 도어락 잠금장치 엔티티입니다. 도어락이 1개면 생략할 수 있습니다.
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: lock
     device_id:
       name: 기기 ID
-      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      description: 고급 사용자용 원본 도어락 deviceId입니다. 보통은 위의 도어락 엔티티를 선택하세요.
       example: "1234567890"
       selector:
         text:
@@ -55,9 +76,16 @@ delete_fingerprint:
   name: 지문 삭제
   description: 직방 도어락에 등록된 지문(FGP)을 pin_id 기준으로 삭제합니다.
   fields:
+    entity_id:
+      name: 도어락 엔티티
+      description: UI에서 선택할 도어락 잠금장치 엔티티입니다. 도어락이 1개면 생략할 수 있습니다.
+      selector:
+        entity:
+          integration: zigbang_doorlock
+          domain: lock
     device_id:
       name: 기기 ID
-      description: 도어락 deviceId입니다. 도어락이 1개면 생략할 수 있습니다.
+      description: 고급 사용자용 원본 도어락 deviceId입니다. 보통은 위의 도어락 엔티티를 선택하세요.
       example: "1234567890"
       selector:
         text:

@@ -5,6 +5,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.storage import Store
 from .api import ZigbangAPI
@@ -18,14 +19,19 @@ except ImportError:  # pragma: no cover - older Home Assistant versions
 
 _LOGGER = logging.getLogger(__name__)
 
-DEVICE_ID_SCHEMA = vol.Schema({vol.Optional("device_id"): str})
+DEVICE_ID_SCHEMA = vol.Schema({
+    vol.Optional("entity_id"): str,
+    vol.Optional("device_id"): str,
+})
 DELETE_CARD_KEY_SCHEMA = vol.Schema({
+    vol.Optional("entity_id"): str,
     vol.Optional("device_id"): str,
     vol.Required("pin_id"): vol.Coerce(int),
     vol.Optional("pin_name", default=""): str,
     vol.Optional("pin", default=None): vol.Any(str, None),
 })
 DELETE_FINGERPRINT_SCHEMA = vol.Schema({
+    vol.Optional("entity_id"): str,
     vol.Optional("device_id"): str,
     vol.Required("pin_id"): vol.Coerce(int),
     vol.Optional("pin_name", default=""): str,
@@ -36,8 +42,22 @@ DELETE_FINGERPRINT_SCHEMA = vol.Schema({
 # 지원하는 플랫폼 플랫폼 정의
 PLATFORMS = ["lock", "sensor", "event", "switch"]
 
-def _resolve_device_id(coordinator: DataUpdateCoordinator, service_device_id: str | None) -> str:
-    """Resolve service device_id, defaulting to the only paired doorlock."""
+def _resolve_device_id(
+    hass: HomeAssistant,
+    coordinator: DataUpdateCoordinator,
+    service_device_id: str | None,
+    entity_id: str | None = None,
+) -> str:
+    """Resolve service device_id from UI-selected entity, raw device_id, or single device."""
+    if entity_id:
+        registry = er.async_get(hass)
+        entity_entry = registry.async_get(entity_id)
+        if entity_entry is None:
+            raise ValueError(f"Unknown Zigbang entity_id: {entity_id}")
+        if entity_entry.platform != DOMAIN or not entity_entry.unique_id.endswith("_lock"):
+            raise ValueError(f"Entity is not a Zigbang doorlock lock entity: {entity_id}")
+        service_device_id = entity_entry.unique_id.removesuffix("_lock")
+
     if service_device_id:
         if service_device_id not in coordinator.data:
             raise ValueError(f"Unknown Zigbang device_id: {service_device_id}")
@@ -46,7 +66,7 @@ def _resolve_device_id(coordinator: DataUpdateCoordinator, service_device_id: st
     device_ids = list(coordinator.data or {})
     if len(device_ids) == 1:
         return device_ids[0]
-    raise ValueError("device_id is required when multiple Zigbang doorlocks are configured")
+    raise ValueError("entity_id or device_id is required when multiple Zigbang doorlocks are configured")
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """통합 구성 요소 설정 """
@@ -149,17 +169,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     async def async_get_card_keys(call: ServiceCall):
-        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        device_id = _resolve_device_id(hass, coordinator, call.data.get("device_id"), call.data.get("entity_id"))
         keys = await api.fetch_card_keys(session, device_id)
         return {"device_id": device_id, "pin_type": "RFC", "pin_infos": keys}
 
     async def async_get_fingerprints(call: ServiceCall):
-        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        device_id = _resolve_device_id(hass, coordinator, call.data.get("device_id"), call.data.get("entity_id"))
         keys = await api.fetch_fingerprints(session, device_id)
         return {"device_id": device_id, "pin_type": "FGP", "pin_infos": keys}
 
     async def async_delete_card_key(call: ServiceCall):
-        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        device_id = _resolve_device_id(hass, coordinator, call.data.get("device_id"), call.data.get("entity_id"))
         success = await api.delete_card_key(
             session,
             device_id,
@@ -171,7 +191,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return {"device_id": device_id, "pin_id": call.data["pin_id"], "success": success}
 
     async def async_delete_fingerprint(call: ServiceCall):
-        device_id = _resolve_device_id(coordinator, call.data.get("device_id"))
+        device_id = _resolve_device_id(hass, coordinator, call.data.get("device_id"), call.data.get("entity_id"))
         success = await api.delete_fingerprint(
             session,
             device_id,
