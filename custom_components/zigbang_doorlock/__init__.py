@@ -90,6 +90,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     raise UpdateFailed("로그인 인증 실패")
             # api.py의 fetch_doorlock_list 호출
             devices = await api.fetch_doorlock_list(session)
+            if not devices:
+                # Treat an empty cloud response as a failed refresh. This keeps
+                # the coordinator's last valid device data instead of making
+                # every existing entity index a missing device ID.
+                raise UpdateFailed("도어락 목록이 비어 있습니다")
             # deviceId를 키로 하는 딕셔너리로 저장 (엔티티에서 접근하기 위함)
             device_dict = {device["deviceId"]: device for device in devices}
 

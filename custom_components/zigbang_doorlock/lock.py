@@ -7,6 +7,24 @@ from .util import rawdt_to_utc, get_unlock_tool_in_raw, get_user_name_in_raw
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _is_locked_from_device_data(device_data):
+    """Return lock state, preferring the newest authoritative history event."""
+    if not device_data:
+        return None
+
+    history = device_data.get("recentHistoryVOList") or {}
+    msg_cd = history.get("msgCd") or ""
+
+    # Zigbang emits variants such as 622_NONE_AUTO for automatic locking.
+    if msg_cd == "622_NONE" or msg_cd.startswith("622_NONE_"):
+        return True
+    if msg_cd == "622_OUT" or msg_cd.startswith("622_IN_"):
+        return False
+
+    locked = (device_data.get("doorlockStatusVO") or {}).get("locked")
+    return locked if isinstance(locked, bool) else None
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """lock 플랫폼 설정"""
     data = hass.data[DOMAIN][entry.entry_id]
@@ -46,13 +64,16 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
 
     @property
     def is_locked(self):
-        """잠금 상태 반환 (doorlockStatusVO -> locked)"""
-        return self.coordinator.data[self._device_id].get("doorlockStatusVO", {}).get("locked", True)
+        """잠금 상태 반환 (최신 출입 이력 우선, 상태 API 보조)."""
+        return _is_locked_from_device_data(
+            (self.coordinator.data or {}).get(self._device_id)
+        )
 
     @property
     def extra_state_attributes(self):
         """도어락의 추가 속성 (최근 이력 정보)"""
-        history = self.coordinator.data[self._device_id].get("recentHistoryVOList", {})
+        device_data = (self.coordinator.data or {}).get(self._device_id) or {}
+        history = device_data.get("recentHistoryVOList", {})
         if not history:
             return None
 

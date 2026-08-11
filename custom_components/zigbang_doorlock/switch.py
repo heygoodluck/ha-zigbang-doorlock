@@ -51,7 +51,8 @@ class ZigbangHomeSecurityModeSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def is_on(self):
         """Return true if the switch is on."""
-        return self.coordinator.data[self._device_id].get("doorlockStatusVO", {}).get("dummyMode", False)
+        device_data = (self.coordinator.data or {}).get(self._device_id) or {}
+        return (device_data.get("doorlockStatusVO") or {}).get("dummyMode")
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""

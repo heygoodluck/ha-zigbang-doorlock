@@ -1,7 +1,30 @@
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.zigbang_doorlock.const import DOMAIN
+from custom_components.zigbang_doorlock.lock import _is_locked_from_device_data
 from homeassistant.const import STATE_LOCKED, STATE_UNLOCKED
 from unittest.mock import patch
+
+
+def test_lock_state_prefers_latest_history_event():
+    """Automatic-lock history must override a conflicting cloud status value."""
+    assert _is_locked_from_device_data({
+        "doorlockStatusVO": {"locked": False},
+        "recentHistoryVOList": {"msgCd": "622_NONE_AUTO"},
+    }) is True
+
+    assert _is_locked_from_device_data({
+        "doorlockStatusVO": {"locked": True},
+        "recentHistoryVOList": {"msgCd": "622_IN_FGP"},
+    }) is False
+
+
+def test_lock_state_falls_back_safely():
+    """Unknown history falls back to status and missing devices stay unknown."""
+    assert _is_locked_from_device_data({
+        "doorlockStatusVO": {"locked": True},
+        "recentHistoryVOList": {"msgCd": "unexpected"},
+    }) is True
+    assert _is_locked_from_device_data({}) is None
 
 async def test_lock_entity(hass, mock_zigbang_api_client):
     """도어락 엔티티 상태 및 제어 테스트"""

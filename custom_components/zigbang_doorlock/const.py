@@ -5,6 +5,7 @@ ATTR_LOCK_STATE = "lock_state"
 # 언어별 알림 타입 정의 (기본 지원: 한국어, 영어)
 ALERT_TYPE = {
     '622_NONE': 'locked',
+    '622_NONE_AUTO': 'locked',
     '622_IN_BLE': 'unlocked',
     '622_IN_FCE': 'unlocked',
     '622_IN_FGP': 'unlocked',

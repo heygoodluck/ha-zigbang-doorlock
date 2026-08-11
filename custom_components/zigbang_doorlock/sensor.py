@@ -48,4 +48,5 @@ class ZigbangBatterySensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """배터리 잔량 반환 (doorlockStatusVO -> battery)"""
-        return self.coordinator.data[self._device_id].get("doorlockStatusVO", {}).get("battery")
+        device_data = (self.coordinator.data or {}).get(self._device_id) or {}
+        return (device_data.get("doorlockStatusVO") or {}).get("battery")
