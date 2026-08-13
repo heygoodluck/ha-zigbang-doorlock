@@ -3,6 +3,7 @@ from custom_components.zigbang_doorlock.const import DOMAIN
 from custom_components.zigbang_doorlock.lock import _is_locked_from_device_data
 from homeassistant.const import STATE_LOCKED, STATE_UNLOCKED
 from unittest.mock import patch
+from unittest.mock import MagicMock
 
 
 def test_lock_state_prefers_latest_history_event():
@@ -25,6 +26,22 @@ def test_lock_state_falls_back_safely():
         "recentHistoryVOList": {"msgCd": "unexpected"},
     }) is True
     assert _is_locked_from_device_data({}) is None
+
+
+def test_lock_available_tracks_wifi_connection():
+    """A stale cloud record must not be presented as a live lock state."""
+    from custom_components.zigbang_doorlock.lock import ZigbangDoorlock
+
+    entity = object.__new__(ZigbangDoorlock)
+    entity._device_id = "device"
+    entity.coordinator = MagicMock(
+        last_update_success=True,
+        data={"device": {"doorlockStatusVO": {"wifiConnected": False}}},
+    )
+    assert entity.available is False
+
+    entity.coordinator.data["device"]["doorlockStatusVO"]["wifiConnected"] = True
+    assert entity.available is True
 
 async def test_lock_entity(hass, mock_zigbang_api_client):
     """도어락 엔티티 상태 및 제어 테스트"""

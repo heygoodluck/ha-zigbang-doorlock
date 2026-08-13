@@ -63,6 +63,17 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
         self._attr_name = "도어락"
 
     @property
+    def available(self) -> bool:
+        """Return whether the door lock currently has a cloud connection."""
+        if not self.coordinator.last_update_success:
+            return False
+        device_data = (self.coordinator.data or {}).get(self._device_id)
+        if not device_data:
+            return False
+        status = device_data.get("doorlockStatusVO") or {}
+        return status.get("wifiConnected") is not False
+
+    @property
     def is_locked(self):
         """잠금 상태 반환 (최신 출입 이력 우선, 상태 API 보조)."""
         return _is_locked_from_device_data(
@@ -98,6 +109,7 @@ class ZigbangDoorlock(CoordinatorEntity, LockEntity):
             "last_event_at": formatted_dt,
             "last_message": history.get("msgText"),
             "last_alert_type": ALERT_TYPE.get(msg_cd, msg_cd) if msg_cd else None,
+            "wifi_connected": (device_data.get("doorlockStatusVO") or {}).get("wifiConnected"),
             "last_unlock_tool": unlock_tool,
             "last_user_name": get_user_name_in_raw(history) or history.get("pinNm"),
             "event_id": history.get("eventId")
